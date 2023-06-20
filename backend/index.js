@@ -1,64 +1,77 @@
-const Express=require('express');
-const sequelize=require('./database/database');
-const product= require('./models/product')
-const cors=require('cors');
-const bodyParser = require('body-parser');
+const Express = require('express');
+const sequelize = require('./database/database');
+const Product = require('./models/product');
+const cors = require('cors');
 
-const app=Express();
-// Add this line below your other imports
-
+const app = Express();
 app.use(cors());
-app.use(bodyParser.json());
+app.use(Express.json());
 
-app.post('/getData', (req, res) => {      //FOR POSTING
+app.get('/getData', async (req, res) => {
+  try {
+    const products = await Product.findAll();
+    res.json(products);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/getData', async (req, res) => {
+  try {
     const { name, email, phone } = req.body;
-   // Create a new product record in the MySQL table
-    product.create({ name, email, phone })
-      .then((createdProduct) => {
-        console.log(createdProduct);
-        res.status(200).json(createdProduct); // Optionally, send the created product back as a response
-      })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-      });
-  });
-  
+    const product = await Product.create({ name, email, phone });
+    res.json(product);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
-  app.get('/getData', (req, res) => {        //FOR FETCHING
-    // Fetch the data from the MySQL table
-    product.findAll()
-      .then((data) => {
-        res.status(200).json(data); // Send the fetched data as a response
-      })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-      });
-  });
-
-  app.delete('/getData/:id', (req, res) => {   //FOR DELETING
+app.put('/getData/:id', async (req, res) => {
+  try {
     const { id } = req.params;
-  
-    // Delete the record from the MySQL table
-    product.destroy({ where: { id } })
-      .then(() => {
-        res.status(200).json({ message: 'Item deleted successfully' });
-      })
-      .catch((err) => {
-        console.error(err);
-        res.status(500).json({ error: 'Internal server error' });
-      });
+    const { name, email, phone } = req.body;
+    const product = await Product.findByPk(id);
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    product.name = name;
+    product.email = email;
+    product.phone = phone;
+    await product.save();
+    res.json(product);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.delete('/getData/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const product = await Product.findByPk(id);
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+    await product.destroy();
+    res.json({ message: 'Product deleted successfully' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+sequelize
+  .sync()
+  .then(() => {
+    console.log('Database synced');
+    app.listen(3000, () => {
+      console.log('Server running');
+    });
+  })
+  .catch((err) => {
+    console.log(err);
   });
-  
-  
-
-product.sync()
-.then((res)=>{
-    console.log(res);
-    app.listen(3000);
-     })
-     .catch((err)=>{
-        console.log(err)
-     })
-
