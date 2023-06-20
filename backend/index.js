@@ -2,14 +2,33 @@ const Express=require('express');
 const sequelize=require('./database/database');
 const product= require('./models/product')
 const cors=require('cors');
+const bodyParser = require('body-parser');
+
+
+
+
 
 const app=Express();
-app.use(cors());
+// Add this line below your other imports
 
-app.use('/getData',(req,res)=>{
-    res.send("This is from Backend")
-    // console.log(req)
-})
+app.use(cors());
+app.use(bodyParser.json());
+
+app.post('/getData', (req, res) => {
+    const { name, email, phone } = req.body;
+  
+    // Create a new product record in the MySQL table
+    product.create({ name, email, phone })
+      .then((createdProduct) => {
+        console.log(createdProduct);
+        res.status(200).json(createdProduct); // Optionally, send the created product back as a response
+      })
+      .catch((err) => {
+        console.error(err);
+        res.status(500).json({ error: 'Internal server error' });
+      });
+  });
+  
 
 // app.listen(3000,()=>{
 //     console.log("Server Running")
