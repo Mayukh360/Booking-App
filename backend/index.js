@@ -11,21 +11,44 @@ const app = Express();
 app.use(cors());
 app.use(Express.json());
 
-app.use((req,res,next)=>{
-  User.findByPk(2)
-  .then(user=>{
-    req.user=user;
-    next()
-  })
-  .catch(err=>console.log(err))
-})
+// app.use((req,res,next)=>{
+//   User.findByPk(2)
+//   .then(user=>{
+//     req.user=user;
+//     next()
+//   })
+//   .catch(err=>console.log(err))
+// })
+
+app.use((req, res, next) => {
+  // console.log("REq",req)
+  const token = req.headers.authorization;
+  console.log(token);
+  if (token) {
+    const decodedToken = jwt.verify(token, 'your-secret-key');
+    const userId = decodedToken.userId;
+    console.log('USERID',userId);
+    User.findByPk(userId)
+      .then((user) => {
+        req.user = user;
+        next();
+      })
+      .catch((err) => {
+        console.log(err);
+        next();
+      });
+  } else {
+    next();
+  }
+});
+
 
 app.get('/getData', bookingController.getAllProducts);
 app.post('/getData', bookingController.createProduct);
 app.put('/getData/:id', bookingController.updateProduct);
 app.delete('/getData/:id', bookingController.deleteProduct);
 
-//***For SignUp */
+
 
 // *** For SignUp ***
 app.post('/signup', (req, res) => {
@@ -70,6 +93,7 @@ app.post('/signup', (req, res) => {
 });
 
 //*** Login ***
+// *** Login ***
 app.post('/login', (req, res) => {
   const { email, password } = req.body;
   
@@ -96,8 +120,8 @@ app.post('/login', (req, res) => {
             }
           );
 
-          // Return the token in the response
-          res.json({ token });
+          // Return the token and userId in the response
+          res.json({ token, userId: user.id });
         })
         .catch((error) => {
           console.error(error);
@@ -109,6 +133,9 @@ app.post('/login', (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
     });
 });
+
+
+
 User.hasMany(Product);
 Product.belongsTo(User)
 
