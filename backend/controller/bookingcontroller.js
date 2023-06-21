@@ -13,7 +13,7 @@ const getAllProducts = async (req, res) => {
 const createProduct = async (req, res) => {
   try {
     const { name, email, phone } = req.body;
-    const product = await Product.create({ name, email, phone });
+    const product = await req.user.createProduct({ name, email, phone });
     res.json(product);
   } catch (error) {
     console.log(error);
